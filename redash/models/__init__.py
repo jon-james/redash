@@ -38,6 +38,7 @@ from redash.utils import (
     mustache_render,
     base_url,
     sentry,
+    update_query_hash,
 )
 from redash.utils.configuration import ConfigurationContainer
 from redash.models.parameterized_query import ParameterizedQuery
@@ -358,8 +359,8 @@ class QueryResult(db.Model, QueryResultPersistence, BelongsToOrgMixin):
         ).options(load_only("id"))
 
     @classmethod
-    def get_latest(cls, data_source, query, max_age=0):
-        query_hash = utils.gen_query_hash(query)
+    def get_latest(cls, data_source, query, max_age=0, apply_auto_limit=False):
+        query_hash = utils.gen_query_hash(query, data_source, apply_auto_limit)
 
         if max_age == -1:
             query = cls.query.filter(
@@ -866,10 +867,14 @@ class Query(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model):
         return [api_key[0] for api_key in api_keys]
 
 
-@listens_for(Query.query_text, "set")
-def gen_query_hash(target, val, oldval, initiator):
-    target.query_hash = utils.gen_query_hash(val)
-    target.schedule_failures = 0
+@listens_for(Query, "before_insert")
+def receive_before_insert(mapper, connection, target):
+    update_query_hash(target)
+
+
+@listens_for(Query, "before_update")
+def receive_before_update(mapper, connection, target):
+    update_query_hash(target)
 
 
 @listens_for(Query.user_id, "set")

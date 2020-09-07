@@ -30,7 +30,7 @@ def _unlock(query_hash, data_source_id):
 def enqueue_query(
     query, data_source, user_id, is_api_key=False, scheduled_query=None, metadata={}
 ):
-    query_hash = gen_query_hash(query)
+    query_hash = gen_query_hash(query, data_source, False)
     logger.info("Inserting job for %s with metadata=%s", query_hash, metadata)
     try_count = 0
     job = None
@@ -161,7 +161,7 @@ class QueryExecutor(object):
 
         # Close DB connection to prevent holding a connection for a long time while the query is executing.
         models.db.session.close()
-        self.query_hash = gen_query_hash(self.query)
+        self.query_hash = gen_query_hash(self.query, self.data_source, False)
         self.scheduled_query = scheduled_query
         # Load existing tracker or create a new one if the job was created before code update:
         if scheduled_query:

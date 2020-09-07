@@ -7,7 +7,9 @@ from redash.utils import (
     filter_none,
     json_dumps,
     generate_token,
+    update_query_hash,
 )
+from tests import BaseTestCase
 
 
 DummyRequest = namedtuple("DummyRequest", ["host", "scheme"])
@@ -78,3 +80,35 @@ class TestGenerateToken(TestCase):
     def test_format(self):
         token = generate_token(40)
         self.assertRegex(token, r"[a-zA-Z0-9]{40}")
+
+
+class TestUpdateQueryHash(BaseTestCase):
+    def test_update_query_hash_basesql_with_options(self):
+        ds = self.factory.create_data_source(
+            group=self.factory.org.default_group, type="databricks"
+        )
+        query = self.factory.create_query(query_text="SELECT 2", data_source=ds)
+        query.options = {"apply_auto_limit": True}
+        origin_hash = query.query_hash
+        update_query_hash(query)
+        self.assertNotEqual(origin_hash, query.query_hash)
+
+    def test_update_query_hash_basesql_no_options(self):
+        ds = self.factory.create_data_source(
+            group=self.factory.org.default_group, type="databricks"
+        )
+        query = self.factory.create_query(query_text="SELECT 2", data_source=ds)
+        query.options = {}
+        origin_hash = query.query_hash
+        update_query_hash(query)
+        self.assertEqual(origin_hash, query.query_hash)
+
+    def test_update_query_hash_non_basesql(self):
+        ds = self.factory.create_data_source(
+            group=self.factory.org.default_group, type="druid"
+        )
+        query = self.factory.create_query(query_text="SELECT 2", data_source=ds)
+        query.options = {"apply_auto_limit": True}
+        origin_hash = query.query_hash
+        update_query_hash(query)
+        self.assertEqual(origin_hash, query.query_hash)

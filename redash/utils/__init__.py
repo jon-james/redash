@@ -49,7 +49,7 @@ def slugify(s):
     return re.sub("[^a-z0-9_\-]+", "-", s.lower())
 
 
-def gen_query_hash(sql):
+def gen_query_hash(sql, data_source=None, set_auto_limit=False):
     """Return hash of the given query after stripping all comments, line breaks
     and multiple spaces, and lower casing all text.
 
@@ -57,9 +57,18 @@ def gen_query_hash(sql):
         1. SELECT 1 FROM table WHERE column='Value';
         2. SELECT 1 FROM table where column='value';
     """
+    if data_source is not None:
+        sql = data_source.query_runner.apply_auto_limit(sql, set_auto_limit)
     sql = COMMENTS_REGEX.sub("", sql)
     sql = "".join(sql.split()).lower()
     return hashlib.md5(sql.encode("utf-8")).hexdigest()
+
+
+def update_query_hash(target):
+    apply_auto_limit = False
+    if target.options is not None:
+        apply_auto_limit = target.options.get("apply_auto_limit", False)
+    target.query_hash = gen_query_hash(target.query_text, target.data_source, apply_auto_limit)
 
 
 def generate_token(length):

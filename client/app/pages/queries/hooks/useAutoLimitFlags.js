@@ -8,14 +8,14 @@ function isAutoLimitAvailable(dataSource) {
 
 export default function useAutoLimitFlags(dataSource, query, setQuery) {
   const isAvailable = isAutoLimitAvailable(dataSource);
-  const [isChecked, setIsChecked] = useState(localOptions.get("applyAutoLimit", true));
-  query.options.applyAutoLimit = isAvailable && isChecked;
+  const [isChecked, setIsChecked] = useState(localOptions.get("apply_auto_limit", true));
+  query.options.apply_auto_limit = isAvailable && isChecked;
 
   const setAutoLimit = useCallback(
     state => {
       setIsChecked(state);
-      localOptions.set("applyAutoLimit", state);
-      setQuery(extend(query.clone(), { options: { ...query.options, applyAutoLimit: isAvailable && state } }));
+      localOptions.set("apply_auto_limit", state);
+      setQuery(extend(query.clone(), { options: { ...query.options, apply_auto_limit: isAvailable && state } }));
     },
     [query, setQuery, isAvailable]
   );
